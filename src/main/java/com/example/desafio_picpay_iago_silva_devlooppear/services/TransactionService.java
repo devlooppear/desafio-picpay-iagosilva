@@ -5,6 +5,7 @@ import com.example.desafio_picpay_iago_silva_devlooppear.repositories.Transactio
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,14 +42,14 @@ public class TransactionService {
     public Transaction updateTransaction(Long id, Transaction transactionDetails) {
         try {
             return transactionRepository.findById(id)
-                .map(transaction -> {
-                    transaction.setAmount(transactionDetails.getAmount());
-                    transaction.setPayer(transactionDetails.getPayer());
-                    transaction.setPayee(transactionDetails.getPayee());
-                    transaction.setTransactionDate(transactionDetails.getTransactionDate());
-                    transaction.setStatus(transactionDetails.getStatus());
-                    return transactionRepository.save(transaction);
-                }).orElseThrow(() -> new RuntimeException("Transaction not found"));
+                    .map(transaction -> {
+                        transaction.setAmount(transactionDetails.getAmount());
+                        transaction.setPayer(transactionDetails.getPayer());
+                        transaction.setPayee(transactionDetails.getPayee());
+                        transaction.setTransactionDate(transactionDetails.getTransactionDate());
+                        transaction.setStatus(transactionDetails.getStatus());
+                        return transactionRepository.save(transaction);
+                    }).orElseThrow(() -> new RuntimeException("Transaction not found"));
         } catch (Exception e) {
             throw new RuntimeException("Error updating transaction: " + e.getMessage());
         }
@@ -60,5 +61,15 @@ public class TransactionService {
         } catch (Exception e) {
             throw new RuntimeException("Error deleting transaction: " + e.getMessage());
         }
+    }
+
+    public List<String> getTransactionStatusDescriptions() {
+        List<String> descriptions = new ArrayList<>();
+        descriptions.add("PENDING: The transaction has been created but has not yet been processed.");
+        descriptions.add("COMPLETED: The transaction has been successfully processed.");
+        descriptions.add("FAILED: The transaction could not be completed due to an error.");
+        descriptions.add("REFUNDED: The transaction has been refunded after completion.");
+
+        return descriptions;
     }
 }
