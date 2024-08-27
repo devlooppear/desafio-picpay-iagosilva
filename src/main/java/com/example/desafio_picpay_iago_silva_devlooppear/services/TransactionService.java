@@ -1,75 +1,98 @@
 package com.example.desafio_picpay_iago_silva_devlooppear.services;
 
 import com.example.desafio_picpay_iago_silva_devlooppear.models.Transaction;
+import com.example.desafio_picpay_iago_silva_devlooppear.models.User;
 import com.example.desafio_picpay_iago_silva_devlooppear.repositories.TransactionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.example.desafio_picpay_iago_silva_devlooppear.repositories.UserRepository; 
+import com.example.desafio_picpay_iago_silva_devlooppear.requests.NotificationRequest;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Service
+@RequiredArgsConstructor
 public class TransactionService {
 
-    @Autowired
-    private TransactionRepository transactionRepository;
+    private final TransactionRepository transactionRepository;
+    private final UserRepository userRepository;
+    private static final String AUTHORIZATION_URL = "https://util.devi.tools/api/v2/authorize";
+    private static final String NOTIFICATION_URL = "https://util.devi.tools/api/v1/notify";
 
+    /**
+     * Creates a new transaction.
+     *
+     * @param transaction the transaction to be created
+     * @return the created transaction
+     * @throws RuntimeException if an error occurs while creating the transaction
+     */
     public Transaction createTransaction(Transaction transaction) {
-        try {
-            return transactionRepository.save(transaction);
-        } catch (Exception e) {
-            throw new RuntimeException("Error creating transaction: " + e.getMessage());
+        return transactionRepository.save(transaction);
+    }
+
+    /**
+     * Transfers value from one user to another after authorization.
+     *
+     * @param value the amount to be transferred
+     * @param payer the ID of the user making the payment
+     * @param payee the ID of the user receiving the payment
+     * @return the created transaction
+     * @throws RuntimeException if an error occurs during the transfer
+     */
+    @Transactional
+    public Transaction transfer(double value, Long payerId, Long payeeId) {
+        RestTemplate restTemplate = new RestTemplate();
+        AuthorizationResponse response = restTemplate.getForObject(AUTHORIZATION_URL, AuthorizationResponse.class);
+
+        if (response != null && response.getData().isAuthorization()) {
+            User payer = userRepository.findById(payerId)
+                .orElseThrow(() -> new RuntimeException("Payer not found."));
+            User payee = userRepository.findById(payeeId)
+                .orElseThrow(() -> new RuntimeException("Payee not found."));
+
+            Transaction transaction = new Transaction();
+            transaction.setAmount(BigDecimal.valueOf(value));
+            transaction.setPayer(payer);
+            transaction.setPayee(payee);
+            transaction.setTransactionDate(LocalDateTime.now());
+
+            Transaction savedTransaction = transactionRepository.save(transaction);
+            sendNotification(payerId, payeeId, value);
+            return savedTransaction;
+        } else {
+            throw new RuntimeException("Transfer not authorized.");
         }
     }
 
-    public List<Transaction> getAllTransactions() {
-        try {
-            return transactionRepository.findAll();
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching transactions: " + e.getMessage());
-        }
+    /**
+     * Sends notification to both payer and payee.
+     *
+     * @param payer the ID of the user making the payment
+     * @param payee the ID of the user receiving the payment
+     * @param value the amount transferred
+     * @throws RuntimeException if an error occurs while sending notifications
+     */
+    private void sendNotification(Long payer, Long payee, double value) {
+        RestTemplate restTemplate = new RestTemplate();
+        String message = String.format("You have transferred %.2f to user %d.", value, payee);
+        NotificationRequest notificationRequest = new NotificationRequest(message);
+
+        restTemplate.postForEntity(NOTIFICATION_URL, notificationRequest, String.class);
     }
 
-    public Optional<Transaction> getTransactionById(Long id) {
-        try {
-            return transactionRepository.findById(id);
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching transaction: " + e.getMessage());
-        }
+    @Data
+    public static class AuthorizationResponse {
+        private String status;
+        private AuthorizationData data;
     }
 
-    public Transaction updateTransaction(Long id, Transaction transactionDetails) {
-        try {
-            return transactionRepository.findById(id)
-                    .map(transaction -> {
-                        transaction.setAmount(transactionDetails.getAmount());
-                        transaction.setPayer(transactionDetails.getPayer());
-                        transaction.setPayee(transactionDetails.getPayee());
-                        transaction.setTransactionDate(transactionDetails.getTransactionDate());
-                        transaction.setStatus(transactionDetails.getStatus());
-                        return transactionRepository.save(transaction);
-                    }).orElseThrow(() -> new RuntimeException("Transaction not found"));
-        } catch (Exception e) {
-            throw new RuntimeException("Error updating transaction: " + e.getMessage());
-        }
-    }
-
-    public void deleteTransaction(Long id) {
-        try {
-            transactionRepository.deleteById(id);
-        } catch (Exception e) {
-            throw new RuntimeException("Error deleting transaction: " + e.getMessage());
-        }
-    }
-
-    public List<String> getTransactionStatusDescriptions() {
-        List<String> descriptions = new ArrayList<>();
-        descriptions.add("PENDING: The transaction has been created but has not yet been processed.");
-        descriptions.add("COMPLETED: The transaction has been successfully processed.");
-        descriptions.add("FAILED: The transaction could not be completed due to an error.");
-        descriptions.add("REFUNDED: The transaction has been refunded after completion.");
-
-        return descriptions;
+    @Data
+    public static class AuthorizationData {
+        private boolean authorization;
     }
 }

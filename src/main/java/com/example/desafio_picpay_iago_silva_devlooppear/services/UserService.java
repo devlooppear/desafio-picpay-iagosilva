@@ -46,7 +46,6 @@ public class UserService {
             user.setCpf(userDetails.getCpf());
             user.setEmail(userDetails.getEmail());
             user.setPassword(userDetails.getPassword());
-            user.setBalance(userDetails.getBalance());
             return userRepository.save(user);
         } catch (Exception e) {
             throw new RuntimeException("Error updating user: " + e.getMessage(), e);
