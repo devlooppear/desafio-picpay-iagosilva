@@ -4,11 +4,10 @@ import com.example.desafio_picpay_iago_silva_devlooppear.repositories.Transactio
 import com.example.desafio_picpay_iago_silva_devlooppear.repositories.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DatabaseSeeder implements CommandLineRunner {
+public class DatabaseSeeder {
 
     @Autowired
     private UserSeeder userSeeder;
@@ -22,12 +21,13 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Autowired
     private TransactionRepository transactionRepository;
 
-    @Override
-    public void run(String... args) throws Exception {
+    public void seedDatabase() {
         transactionRepository.deleteAll();
         userRepository.deleteAll();
 
         userSeeder.seed();
         transactionSeeder.seed();
+
+        System.out.println("Database seeding completed.");
     }
 }

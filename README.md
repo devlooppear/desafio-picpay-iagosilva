@@ -21,3 +21,7 @@ mvn clean install
 ```bash
 mvn -Dflyway.configFiles=src/main/resources/flyway.conf flyway:migrate
 ```
+
+To migrate fresh and seed:
+
+./mvnw spring-boot:run -Dspring-boot.run.arguments="migrate-fresh-and-seed"
