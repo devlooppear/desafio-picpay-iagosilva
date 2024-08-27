@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import com.example.desafio_picpay_iago_silva_devlooppear.enums.TransactionStatus;
 
 @Entity
 @Table(name = "transactions")
@@ -29,7 +30,7 @@ public class Transaction {
     @Column(name = "transaction_date", nullable = false)
     private LocalDateTime transactionDate = LocalDateTime.now();
 
+    @Enumerated(EnumType.STRING) 
     @Column(name = "status", nullable = false)
-    private String status;
-    
+    private TransactionStatus status; 
 }

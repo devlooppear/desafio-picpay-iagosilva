@@ -13,7 +13,7 @@ CREATE TABLE transactions (
     payer_id INT NOT NULL,
     payee_id INT NOT NULL,
     transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL CHECK (status IN ('pending', 'approved', 'reverted', 'failed', 'completed')),
     FOREIGN KEY (payer_id) REFERENCES users(id),
     FOREIGN KEY (payee_id) REFERENCES users(id)
 );
