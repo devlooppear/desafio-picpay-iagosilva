@@ -26,9 +26,6 @@ public class User {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "user_type", nullable = false)
-    private String userType;
-
     @Column(name = "balance", precision = 10, scale = 2, columnDefinition = "DECIMAL(10, 2) DEFAULT 0")
     private BigDecimal balance = BigDecimal.ZERO;
 }
